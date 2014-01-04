@@ -11,6 +11,8 @@ from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from cStringIO import StringIO
 
+from dbtool import DatabaseTool
+
 class CensusProcessor(object):
 
     def __init__(self,DEBUG=False):
@@ -36,9 +38,6 @@ class CensusProcessor(object):
             soup = BeautifulSoup(html)
             atags = soup.find_all('a', href=True)
            
-            if self.DEBUG:
-                print "Looking for PDF link on HTML page ..."
- 
             # itterate and find pdf link
             for tag in atags:
                 tagstr = None
@@ -105,8 +104,8 @@ class CensusProcessor(object):
 
             success = True
 
-            if self.DEBUG:
-                print "Starting PDF decode ..."
+            #if self.DEBUG:
+            #    print "Starting PDF decode ..."
             
             if self.DEBUG:
                 print "Scrubbing PDF Text ..."
@@ -277,13 +276,16 @@ class CensusProcessor(object):
                 inmate['middle'] = middle
                 inmate['last'] = last
                 
+                #if self.DEBUG:
+                #    print "Working on '{0}'".format(rawname)
+
                 for data in rawdata:
-                    if self.DEBUG:
-                        print "[Inmate/Custody Info] Working on: '{0}'".format(data)
+                    #if self.DEBUG:
+                    #    print "[Inmate/Custody Info] Working on: '{0}'".format(data)
                     
                     if re.match('([0-9]{6}) [A-Z] [A-Z] ([0-9]{2})-([0-9]{2})-([0-9]{4})',data):
-                        if self.DEBUG:
-                            print "Inmate info match, procesing."
+                        #if self.DEBUG:
+                        #    print "Inmate info match, procesing."
                         parts = data.split(' ')
                         inmate['mcid'] = parts[0]
                         inmate['sex'] = parts[1]
@@ -291,8 +293,8 @@ class CensusProcessor(object):
                         inmate['dob'] = str(datetime.datetime.strptime(parts[3],"%m-%d-%Y"))
                         
                     elif re.match('[0-9]{2}-[0-9]{2}-[0-9]{4} [0-9]{4} [A-Z]{3}',data):
-                        if self.DEBUG:
-                            print "Custody info match, processing."
+                        #if self.DEBUG:
+                        #    print "Custody info match, processing."
                         parts = data.split(' ')
                         dt = "{0} {1}".format(parts[0],parts[1])
                         custody['datetime'] = str(datetime.datetime.strptime(dt,"%m-%d-%Y %H%M"))
@@ -301,54 +303,54 @@ class CensusProcessor(object):
                     # solution provided by https://github.com/Undeterminant - thanks!
                     elif all(key in inmate for key in inmatekeys):
                     
-                        if self.DEBUG:
-                            print "Inmate data populated, parsing bookings ..."
+                        #if self.DEBUG:
+                        #    print "Inmate data populated, parsing bookings ..."
                         
                         booking = {}
                         for _data in rawdata:
                             
-                            if self.DEBUG:
-                                print "[Bookings] Working on: '{0}'".format(_data)
+                            #if self.DEBUG:
+                            #    print "[Bookings] Working on: '{0}'".format(_data)
                             
                             if re.match('Book Dt:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Book Dt.'"
+                                #if self.DEBUG:
+                                #    print "Found 'Book Dt.'"
                                 _bookdatetime = _data.split(':')[1].strip()
                                 booking['datetime'] = str(datetime.datetime.strptime(_bookdatetime,"%m/%d/%Y %H%M"))
                             
                             elif re.match('Book Typ:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Book Type'"
+                                #if self.DEBUG:
+                                #    print "Found 'Book Type'"
                                 _bookingtype = _data.split(':')[1].strip()
                                 booking['bookingtype'] = _bookingtype
                             
                             elif re.match('Cus Typ:',_data):
-                                if self.DEBUG:
-                                    print "Found Cus Typ"
+                                #if self.DEBUG:
+                                #    print "Found Cus Typ"
                                 _custodytype = _data.split(':')[1].strip()
                                 booking['custodytype'] = _custodytype
                             
                             elif re.match('Bail:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Bail'"
+                                #if self.DEBUG:
+                                #    print "Found 'Bail'"
                                 _bail = _data.split(':')[1].strip()
                                 booking['bail'] = _bail
                             
                             elif re.match('Bond:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Bond'"
+                                #if self.DEBUG:
+                                #    print "Found 'Bond'"
                                 _bond = _data.split(':')[1].strip()
                                 booking['bond'] = _bond
                             
                             elif re.match('Court:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Court'"
+                                #if self.DEBUG:
+                                #    print "Found 'Court'"
                                 _court = _data.split(':')[1].strip()
                                 booking['court'] = _court
                             
                             elif re.match('Exp Rel:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Exp Rel'"
+                                #if self.DEBUG:
+                                #    print "Found 'Exp Rel'"
                                 _expectedrelease = _data.split(':')[1].strip()
                                 if _expectedrelease != "":
                                     booking['expectedrelease'] = datetime.datetime.strptime(_expectedrelease,"%m-%d-%Y")
@@ -356,8 +358,8 @@ class CensusProcessor(object):
                                     booking['expectedrelease'] = None
                             
                             elif re.match('Judge:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Judge'"
+                                #if self.DEBUG:
+                                #    print "Found 'Judge'"
                                 _judge = _data.split(':')[1].strip()
                                 first,middle,last = self._parsename(_judge)
                                 booking['judge'] = {'judge': _judge,
@@ -366,38 +368,38 @@ class CensusProcessor(object):
                                                      'last': last}
                             
                             elif re.match('Arr Agy:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Arr Agy'"
+                                #if self.DEBUG:
+                                    #print "Found 'Arr Agy'"
                                 _agency = _data.split(':')[1].strip()
                                 booking['agency'] = _agency
                             
                             elif re.match('Arr Typ',_data):
-                                if self.DEBUG:
-                                    print "Found 'Arr Typ'"
+                                #if self.DEBUG:
+                                #    print "Found 'Arr Typ'"
                                 _arresttype = _data.split(':')[1].strip()
                                 booking['arresttype'] = _arresttype
                             
                             elif re.match('ROC:',_data):
-                                if self.DEBUG:
-                                    print "Found 'ROC'"
+                                #if self.DEBUG:
+                                #    print "Found 'ROC'"
                                 _roc = _data.split(':')[1].strip()
                                 booking['roc'] = _roc
                             
                             elif re.match('Chg:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Chg'"
+                                #if self.DEBUG:
+                                #    print "Found 'Chg'"
                                 _charge = _data.split(':')[1].strip()
                                 booking['charge'] = _charge
                             
                             elif re.match('Indict:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Indict'"
+                                #if self.DEBUG:
+                                #    print "Found 'Indict'"
                                 _indict = _data.split(':')[1].strip()
                                 booking['indict'] = _indict
                             
                             elif re.match('Adj Dt:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Adj Dt'"
+                                #if self.DEBUG:
+                                #    print "Found 'Adj Dt'"
                                 _adjusteddate = _data.split(':')[1].strip() 
                                 if _adjusteddate.strip() == "":
                                     booking['adjusteddate'] = None
@@ -405,8 +407,8 @@ class CensusProcessor(object):
                                     booking['adjusteddate'] = datetime.datetime.strptime(_adjusteddate,"%m/%d/%Y")
                             
                             elif re.match('Term:',_data):
-                                if self.DEBUG:
-                                    print "Found 'Term'"
+                                #if self.DEBUG:
+                                #    print "Found 'Term'"
                                 _term = _data.split(':')[1].strip()
                                 _days = _term.split(' ')[0]
                                 booking['term'] = _days
@@ -414,12 +416,12 @@ class CensusProcessor(object):
                             # see if we have all of the data for one booking, and if we do then add it to the
                             # list of bookings, and reset our booking modle object
                             if all(key in booking for key in bookingkeys):
-                               print "\tComplete Booking Found, adding to list."
+                               print "\tInmate Booking Added Successfully."
                                bookings.append(booking)
                                booking = {} #BookingModel()
                                continue
                                
-                        print "... Done processing bookings."
+                        #print "... Done processing bookings."
                         break
 
                     # end of if
@@ -428,8 +430,8 @@ class CensusProcessor(object):
                                 'custody':custody,
                                 'bookings': bookings})
                 
-                if self.DEBUG:
-                    print "\tDone working on '{0}'.".format(rawname)
+                #if self.DEBUG:
+                #    print "Done working on '{0}'.".format(rawname)
                 
         #except:
         #    success = False
@@ -483,7 +485,7 @@ class CensusProcessor(object):
             return retdata,success
         
         return retdata,filename,success
-        
+    
 if __name__ == '__main__':
  
     print "Loading Monroe County Jail Imate Census ..." 
@@ -494,5 +496,11 @@ if __name__ == '__main__':
     
     with open("{0}.json".format(filename),"w") as f:
         f.write(json.dumps(retdata))
-        
+    
+    dt = DatabaseTool(DEBUG=True)
+
+    #dt.deletedb()   
+ 
+    dt.addmultiple(retdata)
+
     print "Exiting."
