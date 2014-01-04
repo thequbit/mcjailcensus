@@ -24,5 +24,5 @@ for storage and indexing.
 There is a single script file that will find the pdf, download it, convert it, scrub it, process it, and then push it 
 to the mongodb database.
 
-    > python censusprocessor.py
+    > python ./tools/censusprocessor.py
     
