@@ -452,6 +452,8 @@ class CensusProcessor(object):
             with open("rawpdf.txt","r") as f:
                 pdfstr = f.read()
 
+            filename = "rawpdf.txt"
+
         else:
 
             filename,success = self._downloadpdf()
@@ -480,7 +482,7 @@ class CensusProcessor(object):
         if not success:
             return retdata,success
         
-        return retdata,success
+        return retdata,filename,success
         
 if __name__ == '__main__':
  
@@ -488,9 +490,9 @@ if __name__ == '__main__':
  
     cp = CensusProcessor(DEBUG=True)
  
-    retdata,success = cp.processcensus(usefile=True)
+    retdata,filename,success = cp.processcensus(usefile=True)
     
-    with open("inmates.json","w") as f:
+    with open("{0}.json".format(filename),"w") as f:
         f.write(json.dumps(retdata))
         
     print "Exiting."
