@@ -2,6 +2,9 @@ import datetime
 import json
 import os
 import re
+import urllib2
+
+from bs4 import BeautifulSoup
 
 from pdfminer.pdfinterp import PDFResourceManager, process_pdf
 from pdfminer.converter import TextConverter
@@ -18,11 +21,13 @@ class CensusProcessor(object):
                     url="http://www2.monroecounty.gov/sheriff-inmate",
                     baseurl="http://www2.monroecounty.gov",
                     linktext="Inmate Census",
-                    downloaddir="./pdfs",):
+                    downloaddir="../docs",):
     
         #try:
         if True:
-            print "Downloading PDF ..."
+            if self.DEBUG:
+                print "Downloading Census Page ..."
+            
             success = True
             filename = ""
             
@@ -30,7 +35,10 @@ class CensusProcessor(object):
             html = urllib2.urlopen(url)
             soup = BeautifulSoup(html)
             atags = soup.find_all('a', href=True)
-            
+           
+            if self.DEBUG:
+                print "Looking for PDF link on HTML page ..."
+ 
             # itterate and find pdf link
             for tag in atags:
                 tagstr = None
@@ -40,6 +48,10 @@ class CensusProcessor(object):
                         
                         pdfurl = "{0}{1}".format(baseurl,tag['href'])
                         filename = "{0}/{1}".format(downloaddir,os.path.basename(url))
+                        
+                        if self.DEBUG:
+                            print "Downloading PDF ..."
+
                         u = urllib2.urlopen(pdfurl)
                         
                         with open(filename, "wb") as local_file:
@@ -47,10 +59,10 @@ class CensusProcessor(object):
                         
                         break
             if self.DEBUG:
-                print "... Done pulling in PDF data.")
-        except:
-            success = False
-            filename = ""
+                print "... Done pulling in PDF data."
+        #except:
+        #    success = False
+        #    filename = ""
             
         return (filename,success)
         
@@ -64,6 +76,12 @@ class CensusProcessor(object):
             
             if self.DEBUG:
                 print "Converting PDF to text ..."
+           
+            rsrcmgr = PDFResourceManager()
+            retstr = StringIO()
+            codec = 'utf-8'
+            laparams = LAParams()
+            device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams) 
             
             fp = file(filename, 'rb')
             process_pdf(rsrcmgr, device, fp)
@@ -73,22 +91,25 @@ class CensusProcessor(object):
             retstr.close()
             
             if self.DEBUG:
-                print "PDF to text conversion complete.")
-        except:
-            success = False
-            pdfstr = ""
+                print "PDF to text conversion complete."
+        #except:
+        #    success = False
+        #    pdfstr = ""
         
         return pdfstr,success
         
-    def _scrubpdf(pdfstr,debug=False):
+    def _scrubpdf(self,pdfstr,debug=False):
         
         #try:
         if True:
+
+            success = True
+
             if self.DEBUG:
                 print "Starting PDF decode ..."
             
             if self.DEBUG:
-                print "Scrubbing PDF Text ...")
+                print "Scrubbing PDF Text ..."
 
             labels = ['Book Dt:','Book Typ:','Cus Typ:','Bail:','Bond:','Court:','Judge:',
                       'Exp Rls:','Arr Agy:','Arr Typ:','ROC:','Chg:','Indict:','Adj Dt:','Term:']
@@ -143,7 +164,7 @@ class CensusProcessor(object):
 
         return pdfstr,success
 
-    def _parsename(fullname):
+    def _parsename(self,fullname):
         #try:
         if True:
             parts = fullname.replace('.','').split(',')
@@ -166,11 +187,14 @@ class CensusProcessor(object):
     def _getinmatedata(self,pdfstr):
         #try:
         if True:
-            if selg.DEBUG:
+            
+            if self.DEBUG:
                 print "Attemping to pull inmate names ..."
+            
             success = True
             
             # pull lines from pdf
+            lines = []
             for line in pdfstr.split('\n'):
                 line = line.strip()
                 if line != "":
@@ -192,9 +216,9 @@ class CensusProcessor(object):
                     inmatedata.append(lines[indexes[i]+j])
                 inmates.append((lines[indexes[i]],inmatedata))
                 
-        except:
-            success = False
-            inmates = []
+        #except:
+        #    success = False
+        #    inmates = []
         
         if self.DEBUG:    
             print "Done pulling inmate names, pulled {0} inmates.".format(len(inmates))
@@ -202,8 +226,8 @@ class CensusProcessor(object):
         return inmates,success
 
     def _parsename(self,fullname):
-        #try:
-        if True:
+        try:
+        #if True:
             parts = fullname.replace('.','').split(',')
             last = parts[0].strip()
             if parts[1].rsplit(' ',1)[0].strip() == "":
@@ -213,21 +237,26 @@ class CensusProcessor(object):
                 # take off middle
                 first = parts[1][:-2].strip()
                 middle = parts[1][-1:].strip()
-        #except:
-        #    # this happens when the name is something like "US MARCHAL" rather than a person's name
-        #    first = ""
-        #    middle = ""
-        #    last = fullname
+        except:
+            # this happens when the name is something like "US MARCHAL" rather than a person's name
+            first = ""
+            middle = ""
+            last = fullname
         
         return (first,middle,last)
 
-    def _parseinmates(rawinmates):
+    def _parseinmates(self,rawinmates):
         
         if self.DEBUG:
             print "Attemping to parse inmate, custody, and booking data ..."
         
         inmatekeys = ['first','middle','last','mcid','sex','race','dob']
-        
+        bookingkeys = ['datetime','bookingtype', 'custodytype', 'bail', 'bond', 'court', 
+                       'expectedrelease', 'judge', 'agency', 'arresttype', 'roc', 'charge', 
+                       'indict', 'adjusteddate', 'term']
+        #bookingkeys = ['Book Dt:','Book Typ:','Cus Typ:','Bail:','Bond:','Court:','Judge:',
+        #               'Exp Rls:','Arr Agy:','Arr Typ:','ROC:','Chg:','Indict:','Adj Dt:','Term:']        
+
         #try:
         if True:
             success = True
@@ -235,7 +264,7 @@ class CensusProcessor(object):
             for rawname,rawdata in rawinmates:
              
                 if self.DEBUG:
-                    print "Processing '{0}' ...".format(rawname)) 
+                    print "Processing '{0}' ...".format(rawname) 
                 
                 inmate = {}
                 custody = {}
@@ -257,18 +286,18 @@ class CensusProcessor(object):
                         inmate['mcid'] = parts[0]
                         inmate['sex'] = parts[1]
                         inmate['race'] = parts[2]
-                        inmate['dob'] = datetime.datetime.strptime(parts[3],"%m-%d-%Y")
+                        inmate['dob'] = str(datetime.datetime.strptime(parts[3],"%m-%d-%Y"))
                         
                     elif re.match('[0-9]{2}-[0-9]{2}-[0-9]{4} [0-9]{4} [A-Z]{3}',data):
                         if self.DEBUG:
                             print "Custody info match, processing."
                         parts = data.split(' ')
                         dt = "{0} {1}".format(parts[0],parts[1])
-                        custody['datetime'] = datetime.datetime.strptime(dt,"%m-%d-%Y %H%M")
+                        custody['datetime'] = str(datetime.datetime.strptime(dt,"%m-%d-%Y %H%M"))
                         custody['custodyclass'] = " ".join(parts[2:])
                     
                     # solution provided by https://github.com/Undeterminant - thanks!
-                    elif all(key in inmate for key in inmatekeys)
+                    elif all(key in inmate for key in inmatekeys):
                     
                         if self.DEBUG:
                             print "Inmate data populated, parsing bookings ..."
@@ -283,7 +312,7 @@ class CensusProcessor(object):
                                 if self.DEBUG:
                                     print "Found 'Book Dt.'"
                                 _bookdatetime = _data.split(':')[1].strip()
-                                booking['datetime'] = datetime.datetime.strptime(_bookdatetime,"%m/%d/%Y %H%M")
+                                booking['datetime'] = str(datetime.datetime.strptime(_bookdatetime,"%m/%d/%Y %H%M"))
                             
                             elif re.match('Book Typ:',_data):
                                 if self.DEBUG:
@@ -301,13 +330,13 @@ class CensusProcessor(object):
                                 if self.DEBUG:
                                     print "Found 'Bail'"
                                 _bail = _data.split(':')[1].strip()
-                                booking.['bail'] = _bail
+                                booking['bail'] = _bail
                             
                             elif re.match('Bond:',_data):
                                 if self.DEBUG:
                                     print "Found 'Bond'"
                                 _bond = _data.split(':')[1].strip()
-                                booking.['bond'] = _bond
+                                booking['bond'] = _bond
                             
                             elif re.match('Court:',_data):
                                 if self.DEBUG:
@@ -338,7 +367,7 @@ class CensusProcessor(object):
                                 if self.DEBUG:
                                     print "Found 'Arr Agy'"
                                 _agency = _data.split(':')[1].strip()
-                                booking.agency = __doagency(_agency)
+                                booking['agency'] = _agency
                             
                             elif re.match('Arr Typ',_data):
                                 if self.DEBUG:
@@ -382,13 +411,13 @@ class CensusProcessor(object):
                             
                             # see if we have all of the data for one booking, and if we do then add it to the
                             # list of bookings, and reset our booking modle object
-                            if booking.populated():
+                            if all(key in booking for key in bookingkeys):
                                print "\tComplete Booking Found, adding to list."
                                bookings.append(booking)
                                booking = {} #BookingModel()
                                continue
                                
-                        report("... Done processing bookings.")
+                        print "... Done processing bookings."
                         break
 
                     # end of if
@@ -409,18 +438,34 @@ class CensusProcessor(object):
             
         return retdata,success
 
-    def processcensus(self):
+    def processcensus(self,usefile=False):
 
         retdata = []
 
-        filename,success = self._downloadpdf()
-        if not success:
-            return retdata,success
+        if usefile:
 
-        pdfstr,success = self._convertpdf(filename)
-        if not success:
-            return retdata,success
-        
+            if self.DEBUG:
+                print "Using Local File For PDF Text Source ..."
+
+            with open("rawpdf.txt","r") as f:
+                pdfstr = f.read()
+
+        else:
+
+            filename,success = self._downloadpdf()
+            if not success:
+                return retdata,success
+
+            pdfstr,success = self._convertpdf(filename)
+            if not success:
+                return retdata,success
+      
+            if self.DEBUG:
+                print "Writing out raw pdf text to file ..."
+ 
+            with open("rawpdf.txt","w") as f:
+                f.write(pdfstr)
+ 
         pdfstr,success = self._scrubpdf(pdfstr)
         if not success:
             return retdata,success
@@ -439,9 +484,9 @@ if __name__ == '__main__':
  
     print "Loading Monroe County Jail Imate Census ..." 
  
-    pdfprocessor = CensusProcessor()
-     
-    retdata,success = censusprocessor.processcensus()
+    cp = CensusProcessor(DEBUG=True)
+ 
+    retdata,success = cp.processcensus(usefile=True)
     
     with open("inmates.json","w") as f:
         f.write(json.dumps(retdata))
