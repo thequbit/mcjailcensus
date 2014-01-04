@@ -251,8 +251,10 @@ class CensusProcessor(object):
             print "Attemping to parse inmate, custody, and booking data ..."
         
         inmatekeys = ['first','middle','last','mcid','sex','race','dob']
-        bookingkeys = ['datetime','bookingtype', 'custodytype', 'bail', 'bond', 'court', 
-                       'expectedrelease', 'judge', 'agency', 'arresttype', 'roc', 'charge', 
+        bookingkeys = [#'datetime',
+                       'bookingtype', 'custodytype', 'bail', 'bond', 'court', 
+                       #'expectedrelease', 
+                       'judge', 'agency', 'arresttype', 'roc', 'charge', 
                        'indict', 'adjusteddate', 'term']
         #bookingkeys = ['Book Dt:','Book Typ:','Cus Typ:','Bail:','Bond:','Court:','Judge:',
         #               'Exp Rls:','Arr Agy:','Arr Typ:','ROC:','Chg:','Indict:','Adj Dt:','Term:']        
