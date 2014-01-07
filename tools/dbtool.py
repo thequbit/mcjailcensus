@@ -10,6 +10,8 @@ class DatabaseTool(object):
         self.db = self.client.mcjailcensus
         #self.inmates = db.inmates
 
+        self.db.inmates.remove()
+
     def addmultiple(self,newdata):
 
         if self.DEBUG:
@@ -18,6 +20,7 @@ class DatabaseTool(object):
         inmates = self.db.inmates
 
         for data in newdata:
+            #inmates.find( {  } )
             insertid = inmates.insert(data)
             if self.DEBUG:
                 print "Inserted '{0},{1}' as [{2}]".format(data['inmate']['last'],data['inmate']['first'],insertid)

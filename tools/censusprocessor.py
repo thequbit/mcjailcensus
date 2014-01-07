@@ -46,7 +46,7 @@ class CensusProcessor(object):
                     if tagstr.strip() == linktext.encode("utf8").lower().strip():
                         
                         pdfurl = "{0}{1}".format(baseurl,tag['href'])
-                        filename = "{0}/{1}".format(downloaddir,os.path.basename(url))
+                        filename = "{0}/{1}".format(downloaddir,os.path.basename(pdfurl))
                         
                         if self.DEBUG:
                             print "Downloading PDF ..."
@@ -120,6 +120,16 @@ class CensusProcessor(object):
             pdfstr = re.sub(' +',' ',pdfstr)
             pdfstr = re.sub('\n+','\n',pdfstr)
 
+            censusdate = datetime.date.today().strftime("%Y-%m-%d")
+            for line in pdfstr.split('\n'):
+                if "Current Census for Data:" in line:
+                    date = line.split(':')[1].strip()
+                    year = data.split('-')[2]
+                    month = data.split('-')[0]
+                    day = data.split('-')[1]
+                    censusdate = "-".join((year,month,day))
+                    break
+
             # handle current sentence going to next line
             # (time from custody date/time + first three capital leters form sentence type)
             pdfstr = re.sub('([0-9]{4})(?: )?\n([A-Z]{3})','\\1 \\2',pdfstr)
@@ -131,7 +141,7 @@ class CensusProcessor(object):
             # (in some casses mcid, sex, race, and dob can all be on different lines ...)
             pdfstr = re.sub('([0-9]{6})(?: )?(?:\n)?([A-Z])(?: )?(?:\n)?([A-Z])(?: )?(?:\n)?([0-9]{2}-[0-9]{2}-[0-9]{2})','\\1 \\2 \\3 \\4',pdfstr)
 
-            #ith open("rawfile3.txt","w") as rawfile:
+            #with open("rawfile3.txt","w") as rawfile:
             #   rawfile.write(pdfstr)
 
             # remove page header
@@ -161,7 +171,7 @@ class CensusProcessor(object):
         #    pdfstr = ""
         #    success = False
 
-        return pdfstr,success
+        return pdfstr,censusdate,success
 
     def _parsename(self,fullname):
         #try:
@@ -244,7 +254,7 @@ class CensusProcessor(object):
         
         return (first,middle,last)
 
-    def _parseinmates(self,rawinmates):
+    def _parseinmates(self,rawinmates,censusdate):
         
         if self.DEBUG:
             print "Attemping to parse inmate, custody, and booking data ..."
@@ -426,8 +436,9 @@ class CensusProcessor(object):
 
                     # end of if
                     
-                retdata.append({'inmate':inmate,
-                                'custody':custody,
+                retdata.append({'censusdate': censusdate,
+                                'inmate': inmate,
+                                'custody': custody,
                                 'bookings': bookings})
                 
                 #if self.DEBUG:
@@ -460,11 +471,11 @@ class CensusProcessor(object):
 
             filename,success = self._downloadpdf()
             if not success:
-                return retdata,success
+                return retdata,"",success
 
             pdfstr,success = self._convertpdf(filename)
             if not success:
-                return retdata,success
+                return retdata,"",success
       
             if self.DEBUG:
                 print "Writing out raw pdf text to file ..."
@@ -472,17 +483,17 @@ class CensusProcessor(object):
             with open("rawpdf.txt","w") as f:
                 f.write(pdfstr)
  
-        pdfstr,success = self._scrubpdf(pdfstr)
+        pdfstr,censusdate,success = self._scrubpdf(pdfstr)
         if not success:
-            return retdata,success
+            return retdata,"",success
         
         inmatedata,success = self._getinmatedata(pdfstr)
         if not success:
-            return retdata,success
+            return retdata,"",success
         
-        retdata,success = self._parseinmates(inmatedata)
+        retdata,success = self._parseinmates(inmatedata,censusdate)
         if not success:
-            return retdata,success
+            return retdata,"",success
         
         return retdata,filename,success
     
@@ -492,7 +503,7 @@ if __name__ == '__main__':
  
     cp = CensusProcessor(DEBUG=True)
  
-    retdata,filename,success = cp.processcensus(usefile=True)
+    retdata,filename,success = cp.processcensus(usefile=False)
     
     with open("{0}.json".format(filename),"w") as f:
         f.write(json.dumps(retdata))
