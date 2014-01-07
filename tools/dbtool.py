@@ -10,7 +10,7 @@ class DatabaseTool(object):
         self.db = self.client.mcjailcensus
         #self.inmates = db.inmates
 
-        self.db.inmates.remove()
+        #self.db.inmates.remove()
 
     def addmultiple(self,newdata):
 
