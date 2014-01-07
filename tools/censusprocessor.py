@@ -504,14 +504,22 @@ if __name__ == '__main__':
     cp = CensusProcessor(DEBUG=True)
  
     retdata,filename,success = cp.processcensus(usefile=False)
-    
-    with open("{0}.json".format(filename),"w") as f:
-        f.write(json.dumps(retdata))
-    
-    dt = DatabaseTool(DEBUG=True)
+   
+    print "filename = %s" % filename
+    print "files = {0}".format(os.listdir("../docs/"))
 
-    #dt.deletedb()   
+    if filename.split('/')[-1] in os.listdir("../docs/"):
+        print "Census day already processed, skipping."
+    
+    else:
  
-    dt.addmultiple(retdata)
+        with open("{0}.json".format(filename),"w") as f:
+            f.write(json.dumps(retdata))
+    
+        dt = DatabaseTool(DEBUG=True)
 
-    print "Exiting."
+        #dt.deletedb()   
+ 
+        dt.addmultiple(retdata)
+
+        print "Census Processed.  Exiting."
