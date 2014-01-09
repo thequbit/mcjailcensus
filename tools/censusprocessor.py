@@ -508,11 +508,12 @@ if __name__ == '__main__':
     print "filename = %s" % filename
     print "files = {0}".format(os.listdir("../docs/"))
 
-    if filename.split('/')[-1] in os.listdir("../docs/"):
-        print "Census day already processed, skipping."
-    
-    else:
- 
+    #if filename.split('/')[-1] in os.listdir("../docs/"):
+    #    print "Census day already processed, skipping."
+    #
+    #else:
+    if True:
+
         with open("{0}.json".format(filename),"w") as f:
             f.write(json.dumps(retdata))
     
