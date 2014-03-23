@@ -32,6 +32,12 @@ Fedora:
 
     > yum install mongo-10gen mongo-10gen-server
 
+Note you may need to add these to your mongodb configuration file:
+
+    logpath=/var/log/mongo/mongod.log
+    port=27017
+    dbpath=/var/lib/mongo
+
 ###Running###
 
 There is a single script file that will find the pdf, download it, convert it, scrub it, process it, and then push it 
