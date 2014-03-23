@@ -17,7 +17,7 @@ for storage and indexing.
 
     > pip install pymongo
     > pip install bs4
-    > pip install pdfminer
+    > pip install pdfminer=20110515
     
 ###Running###
 
